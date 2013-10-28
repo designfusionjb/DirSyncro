@@ -16,7 +16,7 @@ namespace DirSyncro
         private TimeSpan settling;
         private List<Regex> includeList = null;
         private List<Regex> excludeList = null;
-        private Queue<SyncMessage> runHistory = new LimitedQueue<SyncMessage>(50);
+        private List<SyncMessage> runHistory = new List<SyncMessage>();
         private Queue<SyncMessage> backLog = new LimitedQueue<SyncMessage>(1000);
         private object sync = new object();
 
@@ -55,57 +55,67 @@ namespace DirSyncro
 
         private bool Run(SyncMessage currentMessage)
         {
-            /// Don't run sync if there has been a sync run on the same sourcefile within the settling time
-            lock (sync)
+            /// Don't run filtered jobs (Don't even add them to run history
+            if (includeList != null)
             {
-                foreach (SyncMessage pastMessage in runHistory)
+                bool found = false;
+                foreach (Regex regex in includeList)
                 {
-                    if (currentMessage.sourceFile.Equals(pastMessage.sourceFile))
+                    if (regex.IsMatch(currentMessage.sourceFile.Name))
                     {
-                        if (currentMessage.modifiedTime.Equals(pastMessage.modifiedTime))
-                        {
-                            Console.WriteLine("SKIP: \"{0}\" was already run.", currentMessage.sourceFile);
-                            return false;
-                        }
-                        else if (currentMessage.timeStamp - pastMessage.timeStamp < settling)
-                        {
-                            Console.WriteLine("SKIP: \"{0}\" too many updates.", currentMessage.sourceFile);
-                            return false;
-                        }
+                        found = true;
+                        break;
                     }
                 }
-
-                /// Don't run filtered jobs (Don't even add them to run history
-                if (includeList != null)
+                if (!found)
                 {
-                    bool found = false;
-                    foreach (Regex regex in includeList)
-                    {
-                        if (regex.IsMatch(currentMessage.sourceFile.Name))
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found)
+                    Console.WriteLine("SKIP: \"{0}\" is filtered.", currentMessage.sourceFile);
+                    return false;
+                }
+            }
+            else if (excludeList != null)
+            {
+                foreach (Regex regex in excludeList)
+                {
+                    if (regex.IsMatch(currentMessage.sourceFile.Name))
                     {
                         Console.WriteLine("SKIP: \"{0}\" is filtered.", currentMessage.sourceFile);
                         return false;
                     }
                 }
-                else if (excludeList != null)
+            }
+
+            /// Don't run sync if there has been a sync run on the same sourcefile within the settling time
+            lock (sync)
+            {
+                bool run = true;
+                for (int i = 0; i < runHistory.Count; i++)
                 {
-                    foreach (Regex regex in excludeList)
+                    if (currentMessage.sourceFile.FullName.Equals(runHistory[i].sourceFile.FullName))
                     {
-                        if (regex.IsMatch(currentMessage.sourceFile.Name))
+                        if (currentMessage.modifiedTime.Equals(runHistory[i].modifiedTime))
                         {
-                            Console.WriteLine("SKIP: \"{0}\" is filtered.", currentMessage.sourceFile);
-                            return false;
+                            Console.WriteLine("SKIP: \"{0}\" was already run.", currentMessage.sourceFile);
+                            // Remove entry that generated duplicate
+                            run = false;
+                        }
+                        else if (currentMessage.timeStamp - runHistory[i].timeStamp < settling)
+                        {
+                            Console.WriteLine("SKIP: \"{0}\" too many updates.", currentMessage.sourceFile);
+                            run = false;
+                        }
+                        else
+                        {
+                            // Remove entry if timestamp is older than settling time
+                            runHistory.RemoveAt(i);
+                            i--;
                         }
                     }
                 }
 
-                runHistory.Enqueue(currentMessage);
+                if (!run) return false;
+
+                runHistory.Add(currentMessage);
             }
 
             return true;
