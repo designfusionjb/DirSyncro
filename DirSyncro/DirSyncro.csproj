@@ -42,10 +42,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Configuration\DirSyncro.cs">
+    <Compile Include="DirSyncro.cs">
       <DependentUpon>DirSyncro.xsd</DependentUpon>
     </Compile>
     <Compile Include="LimitedQueue.cs" />
+    <Compile Include="SyncJob.cs" />
     <Compile Include="SyncModifyJob.cs" />
     <Compile Include="SyncCreateJob.cs" />
     <Compile Include="SyncMessage.cs" />
@@ -57,7 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="Configuration\DirSyncro.xsd">
+    <None Include="DirSyncro.xsd">
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>

@@ -74,40 +74,37 @@ namespace DirSyncro
                         }
                     }
                 }
-            }
 
-            /// Don't run filtered jobs (Don't even add them to run history
-            if (includeList != null)
-            {
-                bool found = false;
-                foreach (Regex regex in includeList)
+                /// Don't run filtered jobs (Don't even add them to run history
+                if (includeList != null)
                 {
-                    if (regex.IsMatch(currentMessage.sourceFile.Name))
+                    bool found = false;
+                    foreach (Regex regex in includeList)
                     {
-                        found = true;
-                        break;
+                        if (regex.IsMatch(currentMessage.sourceFile.Name))
+                        {
+                            found = true;
+                            break;
+                        }
                     }
-                }
-                if (!found)
-                {
-                    Console.WriteLine("SKIP: \"{0}\" is filtered.", currentMessage.sourceFile);
-                    return false;
-                }
-            }
-            else if (excludeList != null)
-            {
-                foreach (Regex regex in excludeList)
-                {
-                    if (regex.IsMatch(currentMessage.sourceFile.Name))
+                    if (!found)
                     {
                         Console.WriteLine("SKIP: \"{0}\" is filtered.", currentMessage.sourceFile);
                         return false;
                     }
                 }
-            }
+                else if (excludeList != null)
+                {
+                    foreach (Regex regex in excludeList)
+                    {
+                        if (regex.IsMatch(currentMessage.sourceFile.Name))
+                        {
+                            Console.WriteLine("SKIP: \"{0}\" is filtered.", currentMessage.sourceFile);
+                            return false;
+                        }
+                    }
+                }
 
-            lock (sync)
-            {
                 runHistory.Enqueue(currentMessage);
             }
 
@@ -128,7 +125,7 @@ namespace DirSyncro
                 {
                     if (Directory.Exists(targetPath))
                     {
-                        syncMessage.targetPath = new FileInfo(targetPath);
+                        syncMessage.targetPath = targetPath;
                         ThreadPool.QueueUserWorkItem(new SyncModifyJob().Execute, syncMessage);
                         Console.WriteLine("CHANGED: \"{0}\".", syncMessage.sourceFile.FullName);
                     }
