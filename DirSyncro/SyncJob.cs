@@ -10,6 +10,7 @@ namespace DirSyncro
 {
     abstract class SyncJob
     {
+        protected Regex multipleBackslash = new Regex(@"\\", RegexOptions.Compiled);
         protected SyncMessage syncMessage;
         protected static List<SyncMessage> runHistory = new List<SyncMessage>();
         private static Queue<SyncMessage> backLog = new LimitedQueue<SyncMessage>(1000);
@@ -17,6 +18,15 @@ namespace DirSyncro
         public SyncJob(SyncMessage syncMessage)
         {
             this.syncMessage = syncMessage;
+        }
+
+        public bool IsDirectoryEmpty(string path)
+        {
+            IEnumerable<string> items = Directory.EnumerateFileSystemEntries(path);
+            using (IEnumerator<string> en = items.GetEnumerator())
+            {
+                return !en.MoveNext();
+            }
         }
 
         protected string CreateEpoch()
@@ -36,7 +46,7 @@ namespace DirSyncro
 
         protected DateTime GetBackupTime(string backupFile)
         {
-            int backupTimeIndex = Path.GetFileNameWithoutExtension(backupFile).LastIndexOf('_');
+            int backupTimeIndex = Path.GetFileNameWithoutExtension(backupFile).LastIndexOf('_') + 1;
 
             return EpochToDateTime(long.Parse(Path.GetFileNameWithoutExtension(backupFile).Substring(backupTimeIndex, Path.GetFileNameWithoutExtension(backupFile).Length - backupTimeIndex)));
         }
@@ -143,7 +153,7 @@ namespace DirSyncro
             // Verify target path and create if necessary
             CreatePath(fullTarget);
 
-            List<FileInfo> fileVersions = fullTarget.GetFiles("*.*", SearchOption.TopDirectoryOnly)
+            List<FileInfo> fileVersions = fullTarget.EnumerateFiles("*.*", SearchOption.TopDirectoryOnly)
                 .Where(path => syncMessage.sourceFile.Name == GetSourceFileFromTargetFile(path.Name)).ToList();
 
             // Construct filename with timestamp and copy source file to target directory

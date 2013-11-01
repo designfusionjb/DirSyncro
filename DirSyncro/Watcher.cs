@@ -47,7 +47,7 @@ namespace DirSyncro
             //fileWatcher.Deleted += new FileSystemEventHandler(DeletedEvent);
             //fileWatcher.EnableRaisingEvents = true;
 
-            ThreadPool.QueueUserWorkItem(new SyncTraverseJob(new SyncMessage(watcherConfig, includeList, excludeList), watcherConfig.TargetDirectory).ExecuteSource);
+            ThreadPool.QueueUserWorkItem(new SyncTraverseJob(new SyncMessage(watcherConfig, includeList, excludeList), watcherConfig.TargetDirectory).ExecuteTarget);
         }
 
         private void FileEvent(object sender, FileSystemEventArgs e)

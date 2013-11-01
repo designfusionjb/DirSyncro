@@ -34,7 +34,7 @@ namespace DirSyncro
             }
 
             // Recurse down into sub-directories
-            foreach (DirectoryInfo subDirectory in sourceDirectory.GetDirectories("*.*", SearchOption.TopDirectoryOnly))
+            foreach (DirectoryInfo subDirectory in sourceDirectory.EnumerateDirectories("*.*", SearchOption.TopDirectoryOnly))
             {
                 CopyFromSourceToTarget(subDirectory);
             }
@@ -55,7 +55,7 @@ namespace DirSyncro
         public void DeleteFromTarget(DirectoryInfo targetDirectory)
         {
             // Recurse down into sub-directories
-            foreach (DirectoryInfo subDirectory in targetDirectory.GetDirectories("*.*", SearchOption.TopDirectoryOnly))
+            foreach (DirectoryInfo subDirectory in targetDirectory.EnumerateDirectories("*.*", SearchOption.TopDirectoryOnly))
             {
                 DeleteFromTarget(subDirectory);
             }
@@ -69,8 +69,8 @@ namespace DirSyncro
             // Gather files ordered by sourceFile
             foreach (FileInfo targetFile in targetFiles)
             {
-                string sourceFile = syncMessage.sourcePath.FullName + Path.DirectorySeparatorChar + targetDirectory.FullName.Replace(syncMessage.targetPath.FullName, "")
-                    + Path.DirectorySeparatorChar + GetSourceFileFromTargetFile(targetFile.Name);
+                string sourceFile = syncMessage.sourcePath.FullName + targetDirectory.FullName.Replace(syncMessage.targetPath.FullName, "") + Path.DirectorySeparatorChar +
+                    GetSourceFileFromTargetFile(targetFile.Name);
 
                 if (!sourceAndTargets.ContainsKey(sourceFile))
                 {
@@ -83,7 +83,7 @@ namespace DirSyncro
             {
                 foreach (FileInfo targetFile in kvp.Value)
                 {
-                    if (DateTime.Now - GetBackupTime(targetFile.Name) > syncMessage.retention)
+                    if (DateTime.UtcNow - GetBackupTime(targetFile.Name) > syncMessage.retention)
                     {
                         if (targetFile == kvp.Value.Last())
                         {
@@ -99,7 +99,7 @@ namespace DirSyncro
                     }
                 }
             }
-            if (Utility.CheckDirectoryEmpty(targetDirectory.FullName))
+            if (IsDirectoryEmpty(targetDirectory.FullName))
                 targetDirectory.Delete();
         }
 
