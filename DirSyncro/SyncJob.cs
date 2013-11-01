@@ -19,6 +19,16 @@ namespace DirSyncro
             this.syncMessage = syncMessage;
         }
 
+        protected string CreateEpoch()
+        {
+            return Math.Round((DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString();
+        }
+
+        protected DateTime EpochToDateTime(long seconds)
+        {
+            return new DateTime(1970, 1, 1).AddSeconds(seconds);
+        }
+
         protected string GetSourceFileFromTargetFile(string targetFile)
         {
             return targetFile.Substring(0, Path.GetFileNameWithoutExtension(targetFile).LastIndexOf('_')) + Path.GetExtension(targetFile);
@@ -31,24 +41,26 @@ namespace DirSyncro
             return EpochToDateTime(long.Parse(Path.GetFileNameWithoutExtension(backupFile).Substring(backupTimeIndex, Path.GetFileNameWithoutExtension(backupFile).Length - backupTimeIndex)));
         }
 
-        protected virtual bool Run()
+        protected bool Run()
         {
+            bool run = true;
+
             /// Don't run filtered jobs (Don't even add them to run history
             if (syncMessage.includeList != null)
             {
-                bool found = false;
+                bool isFound = false;
                 foreach (Regex regex in syncMessage.includeList)
                 {
                     if (regex.IsMatch(syncMessage.sourceFile.Name))
                     {
-                        found = true;
+                        isFound = true;
                         break;
                     }
                 }
-                if (!found)
+                if (!isFound)
                 {
                     Console.WriteLine("SKIP: \"{0}\" is filtered.", syncMessage.sourceFile);
-                    return false;
+                    run = false;
                 }
             }
             else if (syncMessage.excludeList != null)
@@ -58,12 +70,37 @@ namespace DirSyncro
                     if (regex.IsMatch(syncMessage.sourceFile.Name))
                     {
                         Console.WriteLine("SKIP: \"{0}\" is filtered.", syncMessage.sourceFile);
-                        return false;
+                        run = false;
+                        break;
                     }
                 }
             }
 
-            if (!syncMessage.targetPath.Exists)
+            if (run && syncMessage.changeType.Equals(WatcherChangeTypes.Changed))
+            {
+                lock (runHistory)
+                {
+                    for (int i = 0; i < runHistory.Count; i++)
+                    {
+                        if (run &&
+                            syncMessage.sourceFile.FullName.Equals(runHistory[i].sourceFile.FullName) &&
+                            (syncMessage.sourceFile.LastWriteTimeUtc.Equals(runHistory[i].sourceFile.LastWriteTimeUtc) ||
+                                syncMessage.timeStamp - runHistory[i].timeStamp < syncMessage.settling))
+                        {
+                            Console.WriteLine("SKIP: \"{0}\" was already run.", syncMessage.sourceFile);
+                            run = false;
+                        }
+                        if (DateTime.Now - runHistory[i].timeStamp > syncMessage.settling)
+                        {
+                            runHistory.RemoveAt(i);
+                            i--;
+                        }
+                    }
+                    if (run) runHistory.Add(syncMessage);
+                }
+            }
+
+            if (run && !syncMessage.targetPath.Exists)
             {
                 lock (backLog)
                 {
@@ -74,7 +111,7 @@ namespace DirSyncro
                 return false;
             }
 
-            return true;
+            return run;
         }
 
         protected void CreatePath(DirectoryInfo fullTarget)
@@ -135,16 +172,6 @@ namespace DirSyncro
                     }
                 }
             }
-        }
-
-        protected string CreateEpoch()
-        {
-            return Math.Round((DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString();
-        }
-
-        protected DateTime EpochToDateTime(long seconds)
-        {
-            return new DateTime(1970, 1, 1).AddSeconds(seconds);
         }
     }
 }

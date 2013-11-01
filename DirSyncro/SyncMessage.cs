@@ -11,7 +11,6 @@ namespace DirSyncro
     class SyncMessage
     {
         public DateTime timeStamp { private set; get; }
-        public DateTime modifiedTime { private set; get; }
         public WatcherChangeTypes changeType { private set; get; }
         public DirectoryInfo sourcePath { private set; get; }
         public FileInfo sourceFile { set; get; }
@@ -24,7 +23,7 @@ namespace DirSyncro
 
         public SyncMessage(DirSyncroWatcher watcherConfig, List<Regex> includeList, List<Regex> excludeList)
         {
-            this.timeStamp = DateTime.Now;
+            this.timeStamp = DateTime.UtcNow;
             this.sourcePath = new DirectoryInfo(watcherConfig.SourceDirectory);
             this.includeList = includeList;
             this.excludeList = excludeList;
@@ -35,7 +34,7 @@ namespace DirSyncro
 
         public SyncMessage(FileSystemEventArgs eventType, DirSyncroWatcher watcherConfig, List<Regex> includeList, List<Regex> excludeList)
         {
-            this.timeStamp = DateTime.Now;
+            this.timeStamp = DateTime.UtcNow;
             this.changeType = eventType.ChangeType;
             this.sourceFile = new FileInfo(eventType.FullPath);
             this.sourcePath = new DirectoryInfo(watcherConfig.SourceDirectory);
@@ -48,7 +47,7 @@ namespace DirSyncro
 
         public SyncMessage(FileSystemEventArgs eventType, DirSyncroWatcher watcherConfig, string targetPath, List<Regex> includeList, List<Regex> excludeList)
         {
-            this.timeStamp = DateTime.Now;
+            this.timeStamp = DateTime.UtcNow;
             this.changeType = eventType.ChangeType;
             this.sourceFile = new FileInfo(eventType.FullPath);
             this.sourcePath = new DirectoryInfo(watcherConfig.SourceDirectory);
