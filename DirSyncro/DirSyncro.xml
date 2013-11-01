@@ -5,8 +5,8 @@
     <TargetDirectory>C:\Target1</TargetDirectory>
     <Recursive>true</Recursive>
     <Versions>3</Versions>
-    <Settling>10000</Settling>
-    <Retention>100</Retention>
+    <Settling>1</Settling>
+    <Retention>90</Retention>
     <Include></Include>
     <Exclude>*.tmp; ~*.docx</Exclude>
   </Watcher>

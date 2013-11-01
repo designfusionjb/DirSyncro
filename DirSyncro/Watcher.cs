@@ -45,7 +45,9 @@ namespace DirSyncro
             //fileWatcher.Renamed += new RenamedEventHandler(RenamedEvent);
             fileWatcher.Changed += new FileSystemEventHandler(FileEvent);
             //fileWatcher.Deleted += new FileSystemEventHandler(DeletedEvent);
-            fileWatcher.EnableRaisingEvents = true;
+            //fileWatcher.EnableRaisingEvents = true;
+
+            ThreadPool.QueueUserWorkItem(new SyncTraverseJob(new SyncMessage(watcherConfig, includeList, excludeList), watcherConfig.TargetDirectory).ExecuteSource);
         }
 
         private void FileEvent(object sender, FileSystemEventArgs e)

@@ -18,21 +18,33 @@ namespace DirSyncro
             this.targetPaths = targetPaths;
         }
 
+        public void CopyFromSourceToTarget(DirectoryInfo sourceDirectory)
+        {
+            // Copy source files in this directory to target directory
+            foreach (FileInfo sourceFile in sourceDirectory.GetFiles("*.*", SearchOption.TopDirectoryOnly))
+            {
+                syncMessage.sourceFile = sourceFile;
+
+                foreach (string targetPath in targetPaths)
+                {
+                    syncMessage.targetPath = new DirectoryInfo(targetPath);
+
+                    CopyFile();
+                }
+            }
+
+            // Recurse down into sub-directories
+            foreach (DirectoryInfo subDirectory in sourceDirectory.GetDirectories("*.*", SearchOption.TopDirectoryOnly))
+            {
+                CopyFromSourceToTarget(subDirectory);
+            }
+        }
+
         public void ExecuteSource(Object context)
         {
             try
             {
-                foreach (FileInfo sourceFile in new DirectoryInfo(syncMessage.sourcePath).GetFiles("*.*", SearchOption.AllDirectories))
-                {
-                    syncMessage.sourceFile = sourceFile;
-
-                    foreach (string targetPath in targetPaths)
-                    {
-                        syncMessage.targetPath = targetPath;
-
-                        CopyFile();
-                    }
-                }
+                CopyFromSourceToTarget(syncMessage.sourcePath);
             }
             catch (Exception ex)
             {
@@ -40,14 +52,55 @@ namespace DirSyncro
             }
         }
 
-        private bool SameFile(FileInfo file, FileInfo lastFile)
+        public void DeleteFromTarget(DirectoryInfo targetDirectory)
         {
-            if (file.Name.Length != lastFile.Name.Length)
-                return false;
+            // Recurse down into sub-directories
+            foreach (DirectoryInfo subDirectory in targetDirectory.GetDirectories("*.*", SearchOption.TopDirectoryOnly))
+            {
+                DeleteFromTarget(subDirectory);
+            }
 
-            Regex regex = new Regex(@"^(.+)_\d+(\.[^\.]+)?$", RegexOptions.None);
+            Dictionary<string, List<FileInfo>> sourceAndTargets = new Dictionary<string, List<FileInfo>>();
+            
+            // Get all files in directory and sort them by name which gives time order for each backup file as well
+            FileInfo[] targetFiles = targetDirectory.GetFiles("*.*", SearchOption.TopDirectoryOnly);
+            Array.Sort(targetFiles, (f1, f2) => f1.Name.CompareTo(f2.Name));
 
-            return false;
+            // Gather files ordered by sourceFile
+            foreach (FileInfo targetFile in targetFiles)
+            {
+                string sourceFile = syncMessage.sourcePath.FullName + Path.DirectorySeparatorChar + targetDirectory.FullName.Replace(syncMessage.targetPath.FullName, "")
+                    + Path.DirectorySeparatorChar + GetSourceFileFromTargetFile(targetFile.Name);
+
+                if (!sourceAndTargets.ContainsKey(sourceFile))
+                {
+                    sourceAndTargets.Add(sourceFile, new List<FileInfo>());
+                }
+                sourceAndTargets[sourceFile].Add(targetFile);
+            }
+            // Loop over sourceFile and remove targetFiles if they are old
+            foreach (KeyValuePair<string, List<FileInfo>> kvp in sourceAndTargets)
+            {
+                foreach (FileInfo targetFile in kvp.Value)
+                {
+                    if (DateTime.Now - GetBackupTime(targetFile.Name) > syncMessage.retention)
+                    {
+                        if (targetFile == kvp.Value.Last())
+                        {
+                            if (!File.Exists(kvp.Key))
+                            {
+                                targetFile.Delete();
+                            }
+                        }
+                        else
+                        {
+                            targetFile.Delete();
+                        }
+                    }
+                }
+            }
+            if (Utility.CheckDirectoryEmpty(targetDirectory.FullName))
+                targetDirectory.Delete();
         }
 
         public void ExecuteTarget(Object context)
@@ -56,24 +109,9 @@ namespace DirSyncro
             {
                 foreach (string targetPath in targetPaths)
                 {
-                    syncMessage.targetPath = targetPath;
+                    syncMessage.targetPath = new DirectoryInfo(targetPath);
 
-                    // Run one file iteration per directory to minimize memory utilization
-                    DirectoryInfo[] targetDirs = new DirectoryInfo(targetPath).GetDirectories("*.*", SearchOption.AllDirectories);
-                    
-                    foreach (DirectoryInfo targetDir in targetDirs)
-                    {
-                        FileInfo[] targetFiles = targetDir.GetFiles("*.*", SearchOption.TopDirectoryOnly);
-                        Array.Sort(targetFiles, (f1, f2) => f1.Name.CompareTo(f2.Name));
-
-                        List<FileInfo> fileBuffer = new List<FileInfo>(syncMessage.versions);
-                        foreach (FileInfo targetFile in targetFiles)
-                        {
-
-                        }
-                        targetFiles = null;
-                    }
-                    targetDirs = null;
+                    DeleteFromTarget(syncMessage.targetPath);
                 }
             }
             catch (Exception ex)

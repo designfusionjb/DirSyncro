@@ -17,6 +17,7 @@ namespace DirSyncro
         {
             bool run = base.Run();
 
+            // TODO fix retention on runHistory
             /// Don't run sync if there has been a sync run on the same sourcefile within the settling time
             lock (runHistory)
             {
