@@ -7,22 +7,28 @@ using System.Threading;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.ServiceModel;
 
 namespace DirSyncro
 {
     class Program
     {
         private static readonly string configurationFile = @"DirSyncro.xml";
+        private static ServiceHost serviceHost = null;
 
         static void Main(string[] args)
         {
             try
             {
-                ConfigWatcher wc = new ConfigWatcher(configurationFile);
+                if (serviceHost != null)
+                    serviceHost.Close();
 
-                Console.ReadKey();
+                serviceHost = new ServiceHost(typeof(SyncInterface));
+                serviceHost.Open();
 
-                wc.Shutdown();
+                ConfigWatcher.StartConfigWatcher(configurationFile);
+
+                serviceHost.Close();
             }
             catch (Exception e)
             {

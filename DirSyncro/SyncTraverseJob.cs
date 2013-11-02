@@ -21,15 +21,19 @@ namespace DirSyncro
         public void CopyFromSourceToTarget(DirectoryInfo sourceDirectory)
         {
             // Copy source files in this directory to target directory
-            foreach (FileInfo sourceFile in sourceDirectory.GetFiles("*.*", SearchOption.TopDirectoryOnly))
+            List<FileInfo> targetFiles = null;
+            foreach (FileInfo sourceFile in sourceDirectory.EnumerateFiles("*.*", SearchOption.TopDirectoryOnly))
             {
                 syncMessage.sourceFile = sourceFile;
 
-                foreach (string targetPath in targetPaths)
+                if (IncludeFile())
                 {
-                    syncMessage.targetPath = new DirectoryInfo(targetPath);
+                    foreach (string targetPath in targetPaths)
+                    {
+                        syncMessage.targetPath = new DirectoryInfo(targetPath);
 
-                    CopyFile();
+                        targetFiles = CopyFile(targetFiles);
+                    }
                 }
             }
 

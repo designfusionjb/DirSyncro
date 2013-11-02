@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,10 +52,8 @@ namespace DirSyncro
             return EpochToDateTime(long.Parse(Path.GetFileNameWithoutExtension(backupFile).Substring(backupTimeIndex, Path.GetFileNameWithoutExtension(backupFile).Length - backupTimeIndex)));
         }
 
-        protected bool Run()
+        protected bool IncludeFile()
         {
-            bool run = true;
-
             /// Don't run filtered jobs (Don't even add them to run history
             if (syncMessage.includeList != null)
             {
@@ -70,7 +69,7 @@ namespace DirSyncro
                 if (!isFound)
                 {
                     Console.WriteLine("SKIP: \"{0}\" is filtered.", syncMessage.sourceFile);
-                    run = false;
+                    return false;
                 }
             }
             else if (syncMessage.excludeList != null)
@@ -80,11 +79,18 @@ namespace DirSyncro
                     if (regex.IsMatch(syncMessage.sourceFile.Name))
                     {
                         Console.WriteLine("SKIP: \"{0}\" is filtered.", syncMessage.sourceFile);
-                        run = false;
-                        break;
+                        return false;
                     }
                 }
             }
+            return true;
+        }
+
+        protected bool Run()
+        {
+            bool run = true;
+
+            run = IncludeFile();
 
             if (run && syncMessage.changeType.Equals(WatcherChangeTypes.Changed))
             {
@@ -97,10 +103,9 @@ namespace DirSyncro
                             (syncMessage.sourceFile.LastWriteTimeUtc.Equals(runHistory[i].sourceFile.LastWriteTimeUtc) ||
                                 syncMessage.timeStamp - runHistory[i].timeStamp < syncMessage.settling))
                         {
-                            Console.WriteLine("SKIP: \"{0}\" was already run.", syncMessage.sourceFile);
                             run = false;
                         }
-                        if (DateTime.Now - runHistory[i].timeStamp > syncMessage.settling)
+                        if (DateTime.UtcNow - runHistory[i].timeStamp > syncMessage.settling)
                         {
                             runHistory.RemoveAt(i);
                             i--;
@@ -116,7 +121,7 @@ namespace DirSyncro
                 {
                     backLog.Enqueue(syncMessage);
                 }
-                Console.WriteLine("CREATED: \"{0}\" to backlog.", syncMessage.sourceFile);
+                Debug.WriteLine("CREATED: \"{0}\" to backlog.", syncMessage.sourceFile);
 
                 return false;
             }
@@ -135,9 +140,9 @@ namespace DirSyncro
             }
         }
 
-        protected void CopyFile()
+        protected List<FileInfo> CopyFile(List<FileInfo> fileVersions)
         {
-            string partialPath = syncMessage.sourceFile.FullName.Replace(syncMessage.sourcePath.FullName, "");
+            string partialPath = syncMessage.sourceFile.DirectoryName.Replace(syncMessage.sourcePath.FullName, "");
             
             // Construct the partial target path directory
             DirectoryInfo fullTarget = null;
@@ -153,35 +158,49 @@ namespace DirSyncro
             // Verify target path and create if necessary
             CreatePath(fullTarget);
 
-            List<FileInfo> fileVersions = fullTarget.EnumerateFiles("*.*", SearchOption.TopDirectoryOnly)
-                .Where(path => syncMessage.sourceFile.Name == GetSourceFileFromTargetFile(path.Name)).ToList();
-
-            // Construct filename with timestamp and copy source file to target directory
-            string newFullTarget = String.Format("{0}\\{1}_{2}{3}", fullTarget.FullName, Path.GetFileNameWithoutExtension(syncMessage.sourceFile.Name), CreateEpoch(), syncMessage.sourceFile.Extension);
+            // todo - Make solution for having to list the whole directory each iteration of the synctraverse target to source
+            if (fileVersions == null)
+            {
+                fileVersions = fullTarget.EnumerateFiles("*", SearchOption.TopDirectoryOnly).ToList();
+            }
+            List<FileInfo> sourceFileVersions = fileVersions.Select(path => path).Where(path => syncMessage.sourceFile.Name == GetSourceFileFromTargetFile(path.Name)).ToList();
 
             // Only copy file to target if last modified time is newer or the file sizes differ (could mean interrupted file copy)
-            if (fileVersions.Count == 0)
+            if (sourceFileVersions.Count == 0)
             {
+                // Construct filename with timestamp and copy source file to target directory
+                string newFullTarget = String.Format("{0}\\{1}_{2}{3}", fullTarget.FullName, Path.GetFileNameWithoutExtension(syncMessage.sourceFile.Name), CreateEpoch(), syncMessage.sourceFile.Extension);
+                
                 syncMessage.sourceFile.CopyTo(newFullTarget, true);
+
+                Debug.WriteLine("Copying file \"{0}\" to \"{1}\"", syncMessage.sourceFile.FullName, newFullTarget);
             }
-            else if (syncMessage.sourceFile.LastWriteTime > fileVersions.Last().LastWriteTime ||
-                syncMessage.sourceFile.Length != fileVersions.Last().Length)
+            else if (syncMessage.sourceFile.LastWriteTime > sourceFileVersions.Last().LastWriteTime ||
+                syncMessage.sourceFile.Length != sourceFileVersions.Last().Length)
             {
+                // Construct filename with timestamp and copy source file to target directory
+                string newFullTarget = String.Format("{0}\\{1}_{2}{3}", fullTarget.FullName, Path.GetFileNameWithoutExtension(syncMessage.sourceFile.Name), CreateEpoch(), syncMessage.sourceFile.Extension);
+
                 // Sort array so that the oldes file is first in list
-                fileVersions.Sort((f1, f2) => f1.Name.CompareTo(f2.Name));
+                sourceFileVersions.Sort((f1, f2) => f1.Name.CompareTo(f2.Name));
 
                 syncMessage.sourceFile.CopyTo(newFullTarget, true);
-                fileVersions.Add(new FileInfo(newFullTarget));
+                Debug.WriteLine("Copying file \"{0}\" to \"{1}\"", syncMessage.sourceFile.FullName, newFullTarget);
+
+                sourceFileVersions.Add(new FileInfo(newFullTarget));
 
                 // Remove excess backup versions
-                if (fileVersions.Count > syncMessage.versions)
+                if (sourceFileVersions.Count > syncMessage.versions)
                 {
-                    for (int i = 0; i < fileVersions.Count - syncMessage.versions; i++)
+                    for (int i = 0; i < sourceFileVersions.Count - syncMessage.versions; i++)
                     {
-                        fileVersions[i].Delete();
+                        Debug.WriteLine("Deleting file \"{0}\"", sourceFileVersions[i].FullName);
+                        sourceFileVersions[i].Delete();
                     }
                 }
             }
+
+            return fileVersions;
         }
     }
 }

@@ -31,10 +31,16 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>DirSyncro.Program</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
+    <Reference Include="System.Configuration.Install" />
     <Reference Include="System.Core" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -45,7 +51,13 @@
     <Compile Include="DirSyncro.cs">
       <DependentUpon>DirSyncro.xsd</DependentUpon>
     </Compile>
+    <Compile Include="DirSyncroWindowsService.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="FileCopy.cs" />
+    <Compile Include="ISyncInterface.cs" />
     <Compile Include="LimitedQueue.cs" />
+    <Compile Include="SyncInterface.cs" />
     <Compile Include="SyncJob.cs" />
     <Compile Include="SyncModifyJob.cs" />
     <Compile Include="SyncCreateJob.cs" />

@@ -10,16 +10,15 @@ namespace DirSyncro
 {
     class ConfigWatcher
     {
+        private static ConfigWatcher instance;
         private string configurationFile;
         private FileSystemWatcher configWatcher = new FileSystemWatcher();
         private List<Watcher> watchers;
         private DateTime prevLastModified = DateTime.Now;
 
-        public ConfigWatcher(string configurationFile)
+        private ConfigWatcher(string configurationFile)
         {
             this.configurationFile = configurationFile;
-
-            StartWatchers();
 
             configWatcher.Path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             configWatcher.IncludeSubdirectories = false;
@@ -29,7 +28,30 @@ namespace DirSyncro
             configWatcher.EnableRaisingEvents = true;
         }
 
-        private void StartWatchers()
+        public static ConfigWatcher Startup(string configurationFile)
+        {
+            if (instance == null)
+            {
+                instance = new ConfigWatcher(configurationFile);
+            }
+
+            return instance;
+        }
+
+        public void Shutdown()
+        {
+            configWatcher.EnableRaisingEvents = false;
+        }
+
+        public static ConfigWatcher Instance
+        {
+            get
+            {
+                return instance;
+            }
+        }
+
+        public void StartWatchers()
         {
             DirSyncro config = Utility.ReadFromXML<DirSyncro>(configurationFile);
 
@@ -39,13 +61,35 @@ namespace DirSyncro
                 watchers.Add(new Watcher(c));
         }
 
-        private void StopWatchers()
+        public void StopWatchers()
         {
             foreach (Watcher w in watchers)
             {
                 w.Shutdown();
             }
+        }
+
+        public void RestartWatchers()
+        {
+            StopWatchers();
             watchers = null;
+            StartWatchers();
+        }
+
+        public void StartWatcher(string watcherId)
+        {
+            foreach (Watcher w in watchers.Where(w => w.WatcherId == watcherId))
+            {
+                w.StartUp();
+            }
+        }
+
+        public void StopWatcher(string watcherId)
+        {
+            foreach (Watcher w in watchers.Where(w => w.WatcherId == watcherId))
+            {
+                w.Shutdown();
+            }
         }
 
         private void ConfigChanged(object sender, FileSystemEventArgs e)
@@ -58,11 +102,6 @@ namespace DirSyncro
             StartWatchers();
             
             prevLastModified = lastModified;
-        }
-
-        public void Shutdown()
-        {
-            configWatcher.EnableRaisingEvents = false;
         }
     }
 }

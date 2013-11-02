@@ -5,11 +5,6 @@ VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirSyncro", "DirSyncro\DirSyncro.csproj", "{CC9C213F-BC35-4652-B37A-5CEA50856C5D}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "References", "References", "{9EF641B3-80F0-4792-9CDB-CBDA2C5F1EF1}"
-	ProjectSection(SolutionItems) = preProject
-		..\..\..\..\..\Temp\log4net.dll = ..\..\..\..\..\Temp\log4net.dll
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

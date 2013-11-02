@@ -19,7 +19,7 @@ namespace DirSyncro
             {
                 if (Run())
                 {
-                    CopyFile();
+                    CopyFile(null);
                 }
             }
             catch (Exception ex)

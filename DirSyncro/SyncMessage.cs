@@ -41,8 +41,8 @@ namespace DirSyncro
             this.includeList = includeList;
             this.excludeList = excludeList;
             this.versions = watcherConfig.Versions;
-            this.settling = TimeSpan.FromMilliseconds(watcherConfig.Settling);
-            this.retention = TimeSpan.FromMilliseconds(watcherConfig.Retention);
+            this.settling = TimeSpan.FromSeconds(watcherConfig.Settling);
+            this.retention = TimeSpan.FromDays(watcherConfig.Retention);
         }
 
         public SyncMessage(FileSystemEventArgs eventType, DirSyncroWatcher watcherConfig, string targetPath, List<Regex> includeList, List<Regex> excludeList)
@@ -55,8 +55,8 @@ namespace DirSyncro
             this.includeList = includeList;
             this.excludeList = excludeList;
             this.versions = watcherConfig.Versions;
-            this.settling = TimeSpan.FromMilliseconds(watcherConfig.Settling);
-            this.retention = TimeSpan.FromMilliseconds(watcherConfig.Retention);
+            this.settling = TimeSpan.FromSeconds(watcherConfig.Settling);
+            this.retention = TimeSpan.FromDays(watcherConfig.Retention);
         }
     }
 }

@@ -5,7 +5,7 @@
     <TargetDirectory>C:\Target1</TargetDirectory>
     <Recursive>true</Recursive>
     <Versions>3</Versions>
-    <Settling>1</Settling>
+    <Settling>10</Settling>
     <Retention>90</Retention>
     <Include></Include>
     <Exclude>*.tmp; ~*.docx</Exclude>

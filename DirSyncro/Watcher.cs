@@ -12,6 +12,7 @@ namespace DirSyncro
     class Watcher
     {
         private FileSystemWatcher fileWatcher;
+        private string watcherId;
         private DirSyncroWatcher watcherConfig;
         private List<Regex> includeList = null;
         private List<Regex> excludeList = null;
@@ -19,6 +20,7 @@ namespace DirSyncro
         public Watcher(DirSyncroWatcher watcherConfig)
         {
             this.watcherConfig = watcherConfig;
+            this.watcherId = watcherConfig.Name;
             if (!string.IsNullOrEmpty(watcherConfig.Include))
             {
                 includeList = new List<Regex>();
@@ -45,9 +47,12 @@ namespace DirSyncro
             //fileWatcher.Renamed += new RenamedEventHandler(RenamedEvent);
             fileWatcher.Changed += new FileSystemEventHandler(FileEvent);
             //fileWatcher.Deleted += new FileSystemEventHandler(DeletedEvent);
-            //fileWatcher.EnableRaisingEvents = true;
+            fileWatcher.EnableRaisingEvents = true;
+        }
 
-            ThreadPool.QueueUserWorkItem(new SyncTraverseJob(new SyncMessage(watcherConfig, includeList, excludeList), watcherConfig.TargetDirectory).ExecuteTarget);
+        public string WatcherId
+        {
+            get { return watcherId; }
         }
 
         private void FileEvent(object sender, FileSystemEventArgs e)
@@ -63,9 +68,24 @@ namespace DirSyncro
             }
         }
 
+        public void StartUp()
+        {
+            fileWatcher.EnableRaisingEvents = true;
+        }
+
         public void Shutdown()
         {
             fileWatcher.EnableRaisingEvents = false;
+        }
+
+        public void SyncSourceToTarget()
+        {
+            ThreadPool.QueueUserWorkItem(new SyncTraverseJob(new SyncMessage(watcherConfig, includeList, excludeList), watcherConfig.TargetDirectory).ExecuteSource);
+        }
+
+        public void SyncTargetToSource()
+        {
+            ThreadPool.QueueUserWorkItem(new SyncTraverseJob(new SyncMessage(watcherConfig, includeList, excludeList), watcherConfig.TargetDirectory).ExecuteTarget);
         }
     }
 }
