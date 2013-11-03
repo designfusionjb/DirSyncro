@@ -30,7 +30,7 @@ namespace DirSyncro
             if (serviceHost != null)
                 serviceHost.Close();
 
-            serviceHost = new ServiceHost(typeof(SyncInterface));
+            serviceHost = new ServiceHost(typeof(SyncService));
             serviceHost.Open();
         }
 

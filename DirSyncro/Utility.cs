@@ -42,7 +42,7 @@ namespace DirSyncro
             return obj;
         }
 
-        public static void WriteToXML<T>(string xmlFile, ref T serializeObj)
+        public static void WriteToXML<T>(string xmlFile, T serializeObj)
         {
             using (FileStream fs = new FileStream(xmlFile, FileMode.Create))
             {

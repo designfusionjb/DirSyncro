@@ -158,7 +158,6 @@ namespace DirSyncro
             // Verify target path and create if necessary
             CreatePath(fullTarget);
 
-            // todo - Make solution for having to list the whole directory each iteration of the synctraverse target to source
             if (fileVersions == null)
             {
                 fileVersions = fullTarget.EnumerateFiles("*", SearchOption.TopDirectoryOnly).ToList();

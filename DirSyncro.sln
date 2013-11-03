@@ -5,6 +5,11 @@ VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirSyncro", "DirSyncro\DirSyncro.csproj", "{CC9C213F-BC35-4652-B37A-5CEA50856C5D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirSyncroClient", "DirSyncroClient\DirSyncroClient.csproj", "{A334EE95-E76F-431C-8430-8A4883D218BF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{CC9C213F-BC35-4652-B37A-5CEA50856C5D} = {CC9C213F-BC35-4652-B37A-5CEA50856C5D}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +20,10 @@ Global
 		{CC9C213F-BC35-4652-B37A-5CEA50856C5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CC9C213F-BC35-4652-B37A-5CEA50856C5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CC9C213F-BC35-4652-B37A-5CEA50856C5D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A334EE95-E76F-431C-8430-8A4883D218BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A334EE95-E76F-431C-8430-8A4883D218BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A334EE95-E76F-431C-8430-8A4883D218BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A334EE95-E76F-431C-8430-8A4883D218BF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

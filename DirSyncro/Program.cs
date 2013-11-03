@@ -23,16 +23,20 @@ namespace DirSyncro
                 if (serviceHost != null)
                     serviceHost.Close();
 
-                serviceHost = new ServiceHost(typeof(SyncInterface));
+                serviceHost = new ServiceHost(typeof(SyncService));
                 serviceHost.Open();
 
-                ConfigWatcher.StartConfigWatcher(configurationFile);
+                ConfigWatcher.Startup(configurationFile);
+
+                Console.ReadKey();
 
                 serviceHost.Close();
             }
             catch (Exception e)
             {
+                Console.WriteLine(e.Message);
                 Console.WriteLine("{0}", e.StackTrace);
+                Console.ReadKey();
             }
         }
     }

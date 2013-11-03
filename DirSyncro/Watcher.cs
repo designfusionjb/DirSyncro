@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Diagnostics;
 
 namespace DirSyncro
 {
@@ -47,7 +48,8 @@ namespace DirSyncro
             //fileWatcher.Renamed += new RenamedEventHandler(RenamedEvent);
             fileWatcher.Changed += new FileSystemEventHandler(FileEvent);
             //fileWatcher.Deleted += new FileSystemEventHandler(DeletedEvent);
-            fileWatcher.EnableRaisingEvents = true;
+            if (watcherConfig.Enabled)
+                fileWatcher.EnableRaisingEvents = true;
         }
 
         public string WatcherId
@@ -57,24 +59,33 @@ namespace DirSyncro
 
         private void FileEvent(object sender, FileSystemEventArgs e)
         {
-            foreach (string targetPath in watcherConfig.TargetDirectory)
+            if (e.ChangeType == WatcherChangeTypes.Created)
             {
-                SyncMessage syncMessage = new SyncMessage(e, watcherConfig, targetPath, includeList, excludeList);
-
-                if (e.ChangeType == WatcherChangeTypes.Created)
+                foreach (string targetPath in watcherConfig.TargetDirectory)
+                {
+                    SyncMessage syncMessage = new SyncMessage(e, watcherConfig, targetPath, includeList, excludeList);
                     ThreadPool.QueueUserWorkItem(new SyncCreateJob(syncMessage).Execute);
-                else if (e.ChangeType == WatcherChangeTypes.Changed)
+                }
+            }
+            else if (e.ChangeType == WatcherChangeTypes.Changed)
+            {
+                foreach (string targetPath in watcherConfig.TargetDirectory)
+                {
+                    SyncMessage syncMessage = new SyncMessage(e, watcherConfig, targetPath, includeList, excludeList);
                     ThreadPool.QueueUserWorkItem(new SyncModifyJob(syncMessage).Execute);
+                }
             }
         }
 
         public void StartUp()
         {
+            Debug.WriteLine("Starting watcher", watcherId);
             fileWatcher.EnableRaisingEvents = true;
         }
 
         public void Shutdown()
         {
+            Debug.WriteLine("Stopping watcher", watcherId);
             fileWatcher.EnableRaisingEvents = false;
         }
 
